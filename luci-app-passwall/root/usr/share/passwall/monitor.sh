@@ -15,17 +15,8 @@ config_t_get() {
 	echo ${ret:=$3}
 }
 
-if [ "$(ps -w | grep -v grep | grep $CONFIG/monitor.sh | wc -l)" -gt 2 ]; then
-	exit 1
-fi
-
 ENABLED=$(config_t_get global enabled 0)
-[ "$ENABLED" != 1 ] && return 1
-ENABLED=$(config_t_get global_delay start_daemon 0)
-[ "$ENABLED" != 1 ] && return 1
-sleep 1m
-while [ "$ENABLED" -eq 1 ]
-do
+[ "$ENABLED" == "1" ] && {
 	TCP_NODE_NUM=$(config_t_get global_other tcp_node_num 1)
 	for i in $(seq 1 $TCP_NODE_NUM); do
 		eval TCP_NODE$i=$(config_t_get global tcp_node$i nil)
@@ -36,9 +27,9 @@ do
 		eval UDP_NODE$i=$(config_t_get global udp_node$i nil)
 	done
 
-	SOCKS_NODE_NUM=$(config_t_get global_other socks_node_num 1)
-	for i in $(seq 1 $SOCKS_NODE_NUM); do
-		eval SOCKS_NODE$i=$(config_t_get global socks_node$i nil)
+	SOCKS5_NODE_NUM=$(config_t_get global_other socks5_node_num 1)
+	for i in $(seq 1 $SOCKS5_NODE_NUM); do
+		eval SOCKS5_NODE$i=$(config_t_get global socks5_node$i nil)
 	done
 
 	dns_mode=$(config_t_get global dns_mode)
@@ -57,20 +48,21 @@ do
 					exit 0
 				fi
 			fi
-			icount=$(ps -w | grep -v grep | grep -v kcptun | grep $RUN_BIN_PATH | grep -i -E "TCP_${i}" | wc -l)
+			icount=$(ps -w | grep -v grep | grep $RUN_BIN_PATH | grep -i -E "TCP_${i}|brook_tcp_${i}|ipt2socks_tcp_${i}" | wc -l)
 			if [ $icount = 0 ]; then
 				/etc/init.d/passwall restart
 				exit 0
 			fi
 		fi
 	done
+
 
 	#udp
 	for i in $(seq 1 $UDP_NODE_NUM); do
 		eval tmp_node=\$UDP_NODE$i
 		if [ "$tmp_node" != "nil" ]; then
 			[ "$tmp_node" == "default" ] && tmp_node=$TCP_NODE1
-			icount=$(ps -w | grep -v grep | grep $RUN_BIN_PATH | grep -i -E "UDP_${i}" | wc -l)
+			icount=$(ps -w | grep -v grep | grep $RUN_BIN_PATH | grep -i -E "UDP_${i}|brook_udp_${i}|ipt2socks_udp_${i}" | wc -l)
 			if [ $icount = 0 ]; then
 				/etc/init.d/passwall restart
 				exit 0
@@ -78,11 +70,11 @@ do
 		fi
 	done
 
-	#socks
-	for i in $(seq 1 $SOCKS_NODE_NUM); do
-		eval tmp_node=\$SOCKS_NODE$i
+	#socks5
+	for i in $(seq 1 $SOCKS5_NODE_NUM); do
+		eval tmp_node=\$SOCKS5_NODE$i
 		if [ "$tmp_node" != "nil" ]; then
-			icount=$(ps -w | grep -v grep | grep -v kcptun | grep $RUN_BIN_PATH | grep -i "SOCKS_${i}" | wc -l)
+			icount=$(ps -w | grep -v grep | grep $RUN_BIN_PATH | grep -i -E "SOCKS5_${i}|brook_socks_${i}" | wc -l)
 			if [ $icount = 0 ]; then
 				/etc/init.d/passwall restart
 				exit 0
@@ -107,6 +99,4 @@ do
 			exit 0
 		fi
 	fi
-	
-	sleep 1m
-done
+}

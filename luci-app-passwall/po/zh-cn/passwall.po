@@ -115,8 +115,8 @@ msgstr "TCP节点"
 msgid "UDP Node"
 msgstr "UDP节点"
 
-msgid "Socks Node"
-msgstr "Socks节点"
+msgid "Socks5 Node"
+msgstr "Socks5节点"
 
 msgid "Same as the tcp node"
 msgstr "与TCP节点相同"
@@ -130,8 +130,8 @@ msgstr "用于游戏模式或DNS解析等。"
 msgid "The selected server will not use Kcptun."
 msgstr "选中的服务器不会使用Kcptun。"
 
-msgid "The client can use the router's Socks proxy."
-msgstr "客户端可以使用路由器的Socks代理。"
+msgid "The client can use the router's Socks5 proxy."
+msgstr "客户端可以使用路由器的Socks5代理。"
 
 msgid "DNS Mode"
 msgstr "DNS模式"
@@ -208,8 +208,8 @@ msgstr "自定义"
 msgid "DNS Server"
 msgstr "DNS服务器"
 
-msgid "Use Socks Node Resolve DNS"
-msgstr "使用Socks节点解析DNS"
+msgid "Use Socks5 Node Resolve DNS"
+msgstr "使用Socks5节点解析DNS"
 
 msgid "Multi Process Option"
 msgstr "多进程并发"
@@ -249,9 +249,6 @@ msgstr "回国模式"
 
 msgid "Localhost"
 msgstr "本机"
-
-msgid "Router Localhost"
-msgstr "路由器自身"
 
 msgid "Danger"
 msgstr "危险"
@@ -300,12 +297,6 @@ msgstr "V2ray 分流"
 
 msgid "V2ray_shunt"
 msgstr "V2ray 分流"
-
-msgid "Preproxy"
-msgstr "前置代理"
-
-msgid "Use the default node for the transit."
-msgstr "使用默认节点代理转发。"
 
 msgid "Load balancing node list"
 msgstr "负载均衡节点列表"
@@ -442,8 +433,8 @@ msgstr "TCP透明代理端口"
 msgid "UDP Redir Port"
 msgstr "UDP透明代理端口"
 
-msgid "Socks Proxy Port"
-msgstr "Socks代理端口"
+msgid "Socks5 Proxy Port"
+msgstr "Socks5代理端口"
 
 msgid "Kcptun Port"
 msgstr "Kcptun端口"
@@ -496,8 +487,8 @@ msgstr "负载均衡端口"
 msgid "Load Balancing Setting"
 msgstr "负载均衡设置"
 
-msgid "Add a node, Export Of Multi WAN Only support Multi Wan. Load specific gravity range 1-256. Multiple primary servers can be load balanced, standby will only be enabled when the primary server is offline! Multiple groups can be set, Haproxy port same one for each group."
-msgstr "添加节点，指定出口功能是为多WAN用户准备的。负载比重范围1-256。多个主服务器可以负载均衡，备用只有在主服务器离线时才会启用！可以设置多个组，负载均衡端口相同则为一组。"
+msgid "Add a node, Export Of Multi WAN Only support Multi Wan. Load specific gravity range 1-256. Multiple primary servers can be load balanced, standby will only be enabled when the primary server is offline!"
+msgstr "添加节点，指定出口功能是为多WAN用户准备的。负载比重范围1-256。多个主服务器可以负载均衡，备用只有在主服务器离线时才会启用！"
 
 msgid "Node"
 msgstr "节点"
@@ -630,21 +621,6 @@ msgstr "手动订阅"
 
 msgid "Delete All Subscribe Node"
 msgstr "删除所有订阅节点"
-
-msgid "Filter keyword switch"
-msgstr "过滤关键字开关"
-
-msgid "When checked, below options can only be take effect."
-msgstr "当勾选时，下面的选项才生效。"
-
-msgid "Filter keyword"
-msgstr "过滤关键字"
-
-msgid "Filter keyword discarded"
-msgstr "关键字丢弃"
-
-msgid "When checked, the keywords in the list are discarded. Otherwise, it is not discarded."
-msgstr "当勾选时，将丢弃包含列表里的关键字的节点。否则，将保留列表的关键字的节点（反过来）。"
 
 msgid "Add"
 msgstr "添加"
@@ -835,8 +811,8 @@ msgstr "状态信息显示节点检测"
 msgid "Status Show IP111"
 msgstr "状态信息显示IP111"
 
-msgid "Hide menu method, input example in the address bar:"
-msgstr "隐藏菜单方法，地址栏输入例："
+msgid "Hide Menu"
+msgstr "隐藏菜单"
 
 msgid "After the hidden to the display, input example in the address bar:"
 msgstr "当你隐藏后想再次显示，地址栏输入例："

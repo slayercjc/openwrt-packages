@@ -3,17 +3,19 @@ local json = require "luci.jsonc"
 local node_section = arg[1]
 local proto = arg[2]
 local redir_port = arg[3]
-local socks_proxy_port = arg[4]
+local socks5_proxy_port = arg[4]
 local node = ucursor:get_all("passwall", node_section)
 local inbounds = {}
 local outbounds = {}
+local network = proto
 local routing = nil
 
-local function gen_outbound(node)
+local function gen_outbound(node, tag)
     local result = nil
     if node then
         result = {
-            tag = node[".name"],
+            tag = tag or node[".name"],
+            cbi_id = node[".name"],
             protocol = node.v2ray_protocol or "vmess",
             mux = {
                 enabled = (node.v2ray_mux == "1") and true or false,
@@ -21,7 +23,7 @@ local function gen_outbound(node)
                     tonumber(node.v2ray_mux_concurrency) or 8
             },
             -- 底层传输配置
-            streamSettings = (node.v2ray_protocol == "vmess") and {
+            streamSettings = {
                 network = node.v2ray_transport,
                 security = node.v2ray_stream_security,
                 tlsSettings = (node.v2ray_stream_security == "tls") and {
@@ -66,9 +68,9 @@ local function gen_outbound(node)
                     key = node.v2ray_quic_key,
                     header = {type = node.v2ray_quic_guise}
                 } or nil
-            } or nil,
+            },
             settings = {
-                vnext = (node.v2ray_protocol == "vmess") and {
+                vnext = {
                     {
                         address = node.address,
                         port = tonumber(node.port),
@@ -81,32 +83,17 @@ local function gen_outbound(node)
                             }
                         }
                     }
-                } or nil,
-                servers = (node.v2ray_protocol == "http" or node.v2ray_protocol == "socks" or node.v2ray_protocol == "shadowsocks") and {
-                    {
-                        address = node.address,
-                        port = tonumber(node.port),
-                        method = node.v2ray_ss_encrypt_method,
-                        password = node.password or "",
-                        ota = (node.v2ray_ss_ota == '1') and true or false,
-                        users = (node.username and node.password) and {
-                            {
-                                user = node.username or "",
-                                pass = node.password or ""
-                            }
-                        } or nil
-                    }
-                } or nil
+                }
             }
         }
     end
     return result
 end
 
-if socks_proxy_port ~= "nil" then
+if socks5_proxy_port ~= "nil" then
     table.insert(inbounds, {
         listen = "0.0.0.0",
-        port = socks_proxy_port,
+        port = socks5_proxy_port,
         protocol = "socks",
         settings = {auth = "noauth", udp = true, ip = "127.0.0.1"}
     })
@@ -139,9 +126,80 @@ if redir_port ~= "nil" then
     end
 end
 
-local outbound = gen_outbound(node)
-if outbound then table.insert(outbounds, outbound) end
+if node.type == "V2ray_balancing" and node.v2ray_balancing_node then
+    local nodes = node.v2ray_balancing_node
+    local length = #nodes
+    for i = 1, length do
+        local node = ucursor:get_all("passwall", nodes[i])
+        local outbound = gen_outbound(node)
+        if outbound then table.insert(outbounds, outbound) end
+    end
+    routing = {
+        domainStrategy = "IPOnDemand",
+        balancers = {{tag = "balancer", selector = nodes}},
+        rules = {
+            {type = "field", network = "tcp,udp", balancerTag = "balancer"}
+        }
+    }
+elseif node.type == "V2ray_shunt" then
+    local rules = {}
 
+    local youtube_node = node.youtube_node or nil
+    if youtube_node and youtube_node ~= "nil" then
+        local node = ucursor:get_all("passwall", youtube_node)
+        local youtube_outbound = gen_outbound(node, "youtube")
+        if youtube_outbound then
+            table.insert(outbounds, youtube_outbound)
+            local rule = {
+                type = "field",
+                domain = {
+                    "youtube", "youtube.com", "youtu.be", "googlevideo.com",
+                    "ytimg.com","gvt2.com"
+                },
+                outboundTag = "youtube"
+            }
+            table.insert(rules, rule)
+        end
+    end
+
+    local netflix_node = node.netflix_node or nil
+    if netflix_node and netflix_node ~= "nil" then
+        local node = ucursor:get_all("passwall", netflix_node)
+        local netflix_outbound = gen_outbound(node, "netflix")
+        if netflix_outbound then
+            table.insert(outbounds, netflix_outbound)
+            local rule = {
+                type = "field",
+                domain = {
+                    "netflix", "netflix.com", "nflxso.net", "nflxext.com",
+                    "nflximg.com", "nflximg.net", "nflxvideo.net"
+                },
+                outboundTag = "netflix"
+            }
+            table.insert(rules, rule)
+        end
+    end
+
+    local default_node = node.default_node or nil
+    if default_node and default_node ~= "nil" then
+        local node = ucursor:get_all("passwall", default_node)
+        local default_outbound = gen_outbound(node, "default")
+        if default_outbound then
+            table.insert(outbounds, default_outbound)
+            local rule = {
+                type = "field",
+                outboundTag = "default",
+                network = network
+            }
+            table.insert(rules, rule)
+        end
+    end
+
+    routing = {domainStrategy = "IPOnDemand", rules = rules}
+else
+    local outbound = gen_outbound(node)
+    if outbound then table.insert(outbounds, outbound) end
+end
 -- 额外传出连接
 table.insert(outbounds,
              {protocol = "freedom", tag = "direct", settings = {keep = ""}})

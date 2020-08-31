@@ -1,3 +1,9 @@
-本源码功能扩展性比较高，不适合给完全不懂的小白用。
+# uci-app-passwall
 
-所以如果你是，因自己操作不当导致不好用，觉得难用的，请不要使用。
+## 说明
+
+   此仓库只做个人备份用，如有需要请到插件原作者 [[Lienol]](https://github.com/Lienol) 的 [[openwrt-package仓库]](https://github.com/Lienol/openwrt-package)进行反馈。
+
+   源码来源：https://github.com/Lienol
+
+##
