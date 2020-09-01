@@ -1,8 +1,7 @@
-local fs = require "nixio.fs"
-local net = require"luci.model.network".init()
-local ifaces = require"luci.sys".net:devices()
+local uci = require"luci.model.uci".cursor()
+local appname = "passwall"
 
-m = Map("passwall")
+m = Map(appname)
 
 -- [[ Delay Settings ]]--
 s = m:section(TypedSection, "global_delay", translate("Delay Settings"))
@@ -75,8 +74,8 @@ o.default = "22,25,53,143,465,587,993,995,80,443"
 o:value("1:65535", translate("All"))
 o:value("22,25,53,143,465,587,993,995,80,443", translate("Common Use"))
 o:value("80,443", translate("Only Web"))
-o:value("80:", "80 " .. translate("or more"))
-o:value(":443", "443 " .. translate("or less"))
+o:value("80:65535", "80 " .. translate("or more"))
+o:value("1:443", "443 " .. translate("or less"))
 
 ---- UDP Redir Ports
 o = s:option(Value, "udp_redir_ports", translate("UDP Redir Ports"))
@@ -94,16 +93,12 @@ o:value("2", "2 " .. translate("Process"))
 o:value("3", "3 " .. translate("Process"))
 o:value("4", "4 " .. translate("Process"))
 
----- Socks5 Proxy Port
-o = s:option(Value, "socks5_proxy_port", translate("Socks5 Proxy Port"))
-o.datatype = "port"
-o.default = 1081
-o.rmempty = true
-
+--[[
 ---- Proxy IPv6
 o = s:option(Flag, "proxy_ipv6", translate("Proxy IPv6"),
              translate("The IPv6 traffic can be proxyed when selected"))
 o.default = 0
+--]]
 
 --[[
 ---- TCP Redir Port
@@ -149,14 +144,6 @@ o:value("1")
 o:value("2")
 o:value("3")
 
----- Socks5 Node Number Option
-o = s:option(ListValue, "socks5_node_num", "Socks5" .. translate("Node Number"))
-o.default = "1"
-o.rmempty = false
-o:value("1")
-o:value("2")
-o:value("3")
-
 ---- 状态使用大图标
 o = s:option(Flag, "status_use_big_icon", translate("Status Use Big Icon"))
 o.default = "1"
@@ -172,5 +159,25 @@ o.rmempty = false
 o = s:option(Flag, "status_show_ip111", translate("Status Show IP111"))
 o.default = "0"
 o.rmempty = false
+
+local nodes_table = {}
+uci:foreach(appname, "nodes", function(e)
+    if e.type and e.remarks then
+        local remarks = ""
+        if e.type == "V2ray" and (e.protocol == "_balancing" or e.protocol == "_shunt") then
+            remarks = "%s：[%s] " % {translatef(e.type .. e.protocol), e.remarks}
+        else
+            if e.use_kcp and e.use_kcp == "1" then
+                remarks = "%s+%s：[%s] %s" % {e.type, "Kcptun", e.remarks, e.address}
+            else
+                remarks = "%s：[%s] %s:%s" % {e.type, e.remarks, e.address, e.port}
+            end
+        end
+        nodes_table[#nodes_table + 1] = {
+            id = e[".name"],
+            remarks = remarks
+         }
+    end
+end)
 
 return m
