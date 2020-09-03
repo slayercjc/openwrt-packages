@@ -5,20 +5,23 @@ function gen_config(user)
     local settings = nil
     local routing = nil
     local outbounds = {
-        {protocol = "freedom"}, {protocol = "blackhole", tag = "blocked"}
+        {protocol = "freedom", tag = "direct"}, {protocol = "blackhole", tag = "blocked"}
     }
 
-    if user.protocol == "vmess" then
-        if user.vmess_id then
+    if user.protocol == "vmess" or user.protocol == "vless" then
+        if user.uuid then
             local clients = {}
-            for i = 1, #user.vmess_id do
+            for i = 1, #user.uuid do
                 clients[i] = {
-                    id = user.vmess_id[i],
+                    id = user.uuid[i],
                     level = tonumber(user.level),
                     alterId = tonumber(user.alter_id)
                 }
             end
-            settings = {clients = clients}
+            settings = {
+                clients = clients,
+                decryption = user.decryption or "none"
+            }
         end
     elseif user.protocol == "socks" then
         settings = {
@@ -59,25 +62,26 @@ function gen_config(user)
         }
     end
 
-    if user.accept_lan == nil or user.accept_lan == "0" then
-        routing = {
-            domainStrategy = "IPOnDemand",
-            rules = {
-                {
-                    type = "field",
-                    ip = {"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"},
-                    outboundTag = "blocked"
-                }
+    routing = {
+        domainStrategy = "IPOnDemand",
+        rules = {
+            {
+                type = "field",
+                ip = {"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"},
+                outboundTag = (user.accept_lan == nil or user.accept_lan == "0") and "blocked" or "direct"
             }
         }
-    end
+    }
 
     if user.transit_node and user.transit_node ~= "nil" then
         local node = ucic:get_all("passwall", user.transit_node)
         if node and node ~= "nil" and node.type and node.type == "V2ray" then
+            if node.transport == "mkcp" or node.transport == "ds" or node.transport == "quic" then
+                node.stream_security = "none"
+            end
             local transit_node = {
                 tag = "transit",
-                protocol = node.protocol or "vmess",
+                protocol = node.protocol,
                 mux = {
                     enabled = (node.mux == "1") and true or false,
                     concurrency = (node.mux_concurrency) and tonumber(node.mux_concurrency) or 8
@@ -130,16 +134,17 @@ function gen_config(user)
                     } or nil
                 },
                 settings = {
-                    vnext = (node.protocol == "vmess") and {
+                    vnext = (node.protocol == "vmess" or node.protocol == "vless") and {
                         {
                             address = node.address,
                             port = tonumber(node.port),
                             users = {
                                 {
-                                    id = node.vmess_id,
+                                    id = node.uuid,
                                     alterId = tonumber(node.alter_id),
-                                    level = tonumber(node.level),
-                                    security = node.security
+                                    level = node.level and tonumber(node.level) or 0,
+                                    security = node.security,
+                                    encryption = node.encryption or "none"
                                 }
                             }
                         }
@@ -162,12 +167,6 @@ function gen_config(user)
                     } or nil
                 }
             }
-
-            if node.transport == "mkcp" or node.transport == "ds" or node.transport == "quic" then
-                transit_node.streamSettings.security = "none"
-                transit_node.streamSettings.tlsSettings = nil
-            end
-
             table.insert(outbounds, 1, transit_node)
         end
     end
